@@ -37,7 +37,8 @@ Terminal settings in `settings.json`:
 {
   "terminal": {
     "shell": "/bin/zsh",
-    "scrollback": 1000
+    "scrollback": 1000,
+    "keyboardProtocol": "auto"
   }
 }
 ```
@@ -46,5 +47,6 @@ Terminal settings in `settings.json`:
 |-----|------|---------|-------------|
 | `terminal.shell` | string | `""` | Shell command (empty uses system default) |
 | `terminal.scrollback` | int | `1000` | Number of scrollback lines to retain |
+| `terminal.keyboardProtocol` | string | `auto` | Terminal input protocol: `auto`, `legacy`, `xterm`, or `kitty` |
 
 Terminal ANSI colors are configurable via the `terminal` field in your theme file.

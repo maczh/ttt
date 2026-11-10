@@ -15,6 +15,7 @@ var (
 	GitFileViews        = []string{"tree", "list"}
 	IconModes           = []string{IconsNerdFont, IconsNone}
 	ScrollbarGlyphModes = []string{ScrollbarGlyphsBlocks, ScrollbarGlyphsLegacy}
+	KeyboardProtocols   = []string{"auto", "legacy", "xterm", "kitty"}
 )
 
 const (
@@ -28,6 +29,7 @@ const (
 	IconsNerdFont         = "nerd-font"
 	ScrollbarGlyphsBlocks = "blocks"
 	ScrollbarGlyphsLegacy = "legacy"
+	KeyboardProtocolAuto  = "auto"
 )
 
 type TerminalSettings struct {
@@ -37,13 +39,14 @@ type TerminalSettings struct {
 	Args       []string `json:"args,omitempty"`
 	Scrollback int      `json:"scrollback,omitempty"`
 	// KeyboardProtocol controls bytes sent to programs inside the integrated
-	// terminal. Empty means legacy; it is independent from editor input.
+	// terminal. Auto selects the protocol from the terminal environment.
 	KeyboardProtocol string `json:"keyboardProtocol,omitempty"`
 }
 
 func DefaultTerminalSettings() TerminalSettings {
 	return TerminalSettings{
-		Scrollback: 1000,
+		Scrollback:       1000,
+		KeyboardProtocol: KeyboardProtocolAuto,
 	}
 }
 
@@ -575,6 +578,9 @@ func normalizeSettings(s *Settings) {
 	}
 	if !slices.Contains(ScrollbarGlyphModes, s.Appearance.ScrollbarGlyphs) {
 		s.Appearance.ScrollbarGlyphs = ScrollbarGlyphsBlocks
+	}
+	if !slices.Contains(KeyboardProtocols, s.Terminal.KeyboardProtocol) {
+		s.Terminal.KeyboardProtocol = KeyboardProtocolAuto
 	}
 }
 

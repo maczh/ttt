@@ -72,6 +72,11 @@ func (a *App) ApplySettings(s config.Settings) {
 	prev := a.appliedSettings
 	a.appliedSettings = s
 	*a.Settings = s
+	if a.TerminalPanel != nil && s.Terminal.KeyboardProtocol != prev.Terminal.KeyboardProtocol {
+		for _, tab := range a.Terminals {
+			tab.Widget.SetKeyboardProtocol(s.Terminal.KeyboardProtocol)
+		}
+	}
 	if !s.Welcome.IsRecentFoldersEnabled() {
 		a.clearRecentFolders()
 	}

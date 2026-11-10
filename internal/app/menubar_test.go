@@ -8,6 +8,7 @@ import (
 
 	"github.com/eugenioenko/ttt/internal/config"
 	"github.com/eugenioenko/ttt/internal/term"
+	"github.com/eugenioenko/ttt/internal/ui"
 	"github.com/eugenioenko/ttt/internal/workspace"
 )
 
@@ -112,6 +113,23 @@ func TestOptionsMenuSeparatesPresentationSubmenusFromCheckboxes(t *testing.T) {
 	}
 	if items[firstSeparator+1].Checked != 0 || items[firstSeparator+2].Checked != 0 {
 		t.Fatal("presentation submenus should not reserve checkbox indicators")
+	}
+}
+
+func TestOptionsMenuIncludesKeyboardProtocolSubmenu(t *testing.T) {
+	items := buildTestApp(t, config.DefaultSettings()).BuildOptionsMenu()
+	var keyboard []ui.ContextMenuItem
+	for _, item := range items {
+		if item.Label == "Keyboard" {
+			keyboard = item.Submenu
+			break
+		}
+	}
+	if len(keyboard) != len(config.KeyboardProtocols) {
+		t.Fatalf("keyboard submenu has %d items, want %d", len(keyboard), len(config.KeyboardProtocols))
+	}
+	if keyboard[0].Label != "Auto" || keyboard[0].Checked == 0 {
+		t.Fatalf("default keyboard item = %+v, want checked Auto", keyboard[0])
 	}
 }
 

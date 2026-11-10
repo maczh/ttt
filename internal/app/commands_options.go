@@ -1,6 +1,8 @@
 package app
 
 import (
+	"slices"
+
 	"github.com/eugenioenko/ttt/internal/command"
 	"github.com/eugenioenko/ttt/internal/config"
 	"github.com/eugenioenko/ttt/internal/term"
@@ -216,6 +218,17 @@ func (a *App) SetGutterStyle(style string) {
 	a.SaveAndApplySettings()
 }
 
+func (a *App) SetKeyboardProtocol(protocol string) {
+	if !slices.Contains(config.KeyboardProtocols, protocol) {
+		protocol = config.KeyboardProtocolAuto
+	}
+	a.Settings.Terminal.KeyboardProtocol = protocol
+	if err := config.SaveSettings(*a.Settings); err != nil {
+		a.StatusError("Failed to save keyboard protocol: " + err.Error())
+	}
+	a.ApplySettings(*a.Settings)
+}
+
 // Display labels for the gutter and border style values in config.
 var styleLabels = map[string]string{
 	"minimal":  "Minimal",
@@ -406,11 +419,26 @@ func (a *App) BuildOptionsMenu() []ui.ContextMenuItem {
 		{Label: "Diff Views", Submenu: a.BuildDiffViewOptions()},
 		{Label: "Git Files", Submenu: a.BuildGitFileOptions()},
 		ui.MenuSep(),
+		{Label: "Keyboard", Submenu: a.BuildKeyboardOptions()},
 		{Label: "Gutter Style", Command: "options.gutterStyle"},
 		{Label: "Border Style", Command: "options.borderStyle"},
 		{Label: "Indentation", Command: "options.indentation"},
 		ui.MenuSep(),
 		{Label: "Settings", Command: "settings.openUI"},
+	}
+	return items
+}
+
+func (a *App) BuildKeyboardOptions() []ui.ContextMenuItem {
+	labels := map[string]string{
+		"auto": "Auto", "legacy": "Legacy", "xterm": "Xterm", "kitty": "Kitty",
+	}
+	items := make([]ui.ContextMenuItem, 0, len(config.KeyboardProtocols))
+	for _, protocol := range config.KeyboardProtocols {
+		items = append(items, ui.ContextMenuItem{
+			Label: labels[protocol], Command: "options.keyboard." + protocol,
+			Checked: menuChecked(a.Settings.Terminal.KeyboardProtocol == protocol),
+		})
 	}
 	return items
 }
@@ -582,6 +610,14 @@ func registerOptionsCommands(app *App) {
 		Keywords: []string{"preferences", "settings", "explorer", "git", "files", "icons", "nerd font"},
 		Handler:  app.ToggleFileIcons,
 	})
+	for _, protocol := range config.KeyboardProtocols {
+		protocol := protocol
+		reg.Register(command.Command{
+			ID: "options.keyboard." + protocol, Title: "Use " + protocol + " Keyboard Protocol",
+			Keywords: []string{"preferences", "settings", "keyboard", "terminal", protocol},
+			Handler:  func() { app.SetKeyboardProtocol(protocol) },
+		})
+	}
 
 	reg.Register(command.Command{
 		ID: "options.toggleAutoIndent", Title: "Toggle Auto Indent",

@@ -174,6 +174,7 @@ Below the favorites, the welcome page lists the last 10 folders opened under **R
 |-----|------|---------|-------------|
 | `terminal.shell` | string | `""` | Shell command (empty uses system default) |
 | `terminal.scrollback` | int | `1000` | Number of scrollback lines to retain |
+| `terminal.keyboardProtocol` | string | `auto` | Terminal input protocol: `auto`, `legacy`, `xterm`, or `kitty` |
 
 ## LSP
 

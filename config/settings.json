@@ -45,7 +45,8 @@
     "fileView": "list"
   },
   "terminal": {
-    "scrollback": 1000
+    "scrollback": 1000,
+    "keyboardProtocol": "auto"
   },
   "agents": {
     "claude": {

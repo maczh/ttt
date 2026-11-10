@@ -248,7 +248,7 @@ Built-in terminal emulator. Press Ctrl+T to toggle the terminal panel, or Alt+T 
 - Full VT escape sequence support via [`eugenioenko/xterm-go`](https://github.com/eugenioenko/xterm-go) (a maintained fork of [`gitpod-io/xterm-go`](https://github.com/gitpod-io/xterm-go)) and PTY management via [`aymanbagabas/go-pty`](https://github.com/aymanbagabas/go-pty)
 - True color (24-bit) and 256-color rendering
 - When the terminal is focused, all keys go to the PTY except force keys (Ctrl+T, Alt+T, Ctrl+Q, Ctrl+P, Ctrl+K P, Ctrl+B, F6)
-- Terminal shell and scrollback are configurable in `settings.json`; ANSI colors are theme-configurable via the `terminal` field in `theme.json`
+- Terminal shell, scrollback, and keyboard input protocol (`auto`, `legacy`, `xterm`, or `kitty`) are configurable in `settings.json`; ANSI colors are theme-configurable via the `terminal` field in `theme.json`
 
 See [Integrated Terminal](docs-web/src/content/docs/guides/terminal.md).
 

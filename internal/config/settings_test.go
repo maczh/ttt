@@ -255,8 +255,8 @@ func TestDefaultTerminalSettings(t *testing.T) {
 	if ts.Shell != "" {
 		t.Errorf("expected Shell to be empty by default, got %q", ts.Shell)
 	}
-	if ts.KeyboardProtocol != "" {
-		t.Errorf("expected KeyboardProtocol to default to empty, got %q", ts.KeyboardProtocol)
+	if ts.KeyboardProtocol != KeyboardProtocolAuto {
+		t.Errorf("expected KeyboardProtocol to default to %q, got %q", KeyboardProtocolAuto, ts.KeyboardProtocol)
 	}
 }
 
