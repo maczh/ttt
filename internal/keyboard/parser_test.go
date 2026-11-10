@@ -2,6 +2,29 @@ package keyboard
 
 import "testing"
 
+func TestProtocolMatrixNormalizesSameShortcut(t *testing.T) {
+	tests := []struct {
+		name string
+		seq  string
+	}{
+		{name: "legacy control byte", seq: "\x03"},
+		{name: "xterm modified key", seq: "\x1b[27;5;99~"},
+		{name: "kitty CSI u", seq: "\x1b[99;5u"},
+	}
+	want := KeyEvent{Code: KeyRune, Rune: 'c', Modifiers: ModCtrl}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ParseKeySequence([]byte(tt.seq))
+			if err != nil {
+				t.Fatalf("parse error = %v", err)
+			}
+			if got != want {
+				t.Fatalf("normalized = %#v, want %#v", got, want)
+			}
+		})
+	}
+}
+
 func TestParseKeySequenceNormalizesCtrlLeft(t *testing.T) {
 	tests := []struct {
 		name string

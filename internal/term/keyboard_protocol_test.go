@@ -86,3 +86,18 @@ func TestKeyboardProtocolSessionProbeTimeoutFallsBack(t *testing.T) {
 		t.Fatalf("timeout protocol = %q, want legacy", s.Protocol())
 	}
 }
+
+func TestKeyboardProtocolSessionUsesLegacyInMultiplexerEnvironments(t *testing.T) {
+	for _, env := range []KeyboardEnvironment{
+		{TERM: "xterm-256color", TMUX: "/tmp/tmux-1/default"},
+		{TERM: "screen", TermProgram: "screen"},
+	} {
+		s := NewKeyboardProtocolSession(KeyboardAuto, env, nil)
+		if err := s.Start(); err != nil {
+			t.Fatal(err)
+		}
+		if got := s.Protocol(); got != KeyboardLegacy {
+			t.Fatalf("environment %+v selected %q, want legacy", env, got)
+		}
+	}
+}
