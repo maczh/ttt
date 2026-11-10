@@ -84,6 +84,39 @@ func (e *EditorPaneWidget) multiExecRune(r rune) {
 	e.syncFromMulti()
 }
 
+func (e *EditorPaneWidget) multiExecPair(open, close rune) {
+	e.syncToMulti()
+	var cmds []undo.EditCommand
+	for i := len(e.Multi.Cursors) - 1; i >= 0; i-- {
+		cs := &e.Multi.Cursors[i]
+		insertCol := cs.Col
+		if cs.Sel.Active {
+			start, end := cs.Sel.Range(cs.Line, cs.Col)
+			delCmd := &undo.DeleteSelectionCommand{
+				StartLine: start.Line, StartCol: start.Col,
+				EndLine: end.Line, EndCol: end.Col,
+			}
+			delCmd.Apply(e.Buf)
+			cmds = append(cmds, delCmd)
+			cs.Line = start.Line
+			cs.Col = start.Col
+			insertCol = cs.Col
+			cs.Sel.Clear()
+			e.adjustLaterCursors(i, start, end)
+		}
+		cmd := &undo.InsertStringCommand{Line: cs.Line, Col: insertCol, Text: string([]rune{open, close})}
+		cmd.Apply(e.Buf)
+		cmds = append(cmds, cmd)
+		cs.Col++
+		e.shiftLaterCursors(i, cs.Line, insertCol, 2)
+	}
+	if e.Undo != nil {
+		e.Undo.Push(&undo.BatchCommand{Commands: cmds})
+	}
+	e.bufferDirty = true
+	e.syncFromMulti()
+}
+
 // multiExecTab inserts one indent unit at every cursor, mirroring how a typed
 // character is applied across cursors.
 func (e *EditorPaneWidget) multiExecTab() {

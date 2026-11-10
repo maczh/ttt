@@ -204,7 +204,11 @@ func (e *EditorPaneWidget) handleKey(kev *tcell.EventKey) EventResult {
 		e.expandFoldAtCursor()
 		if r := term.KeyRune(kev); r != 0 {
 			if multi {
-				e.multiExecRune(r)
+				if closer, ok := matchingCloser(r); ok {
+					e.multiExecPair(r, closer)
+				} else {
+					e.multiExecRune(r)
+				}
 			} else {
 				e.execRune(r)
 			}
@@ -409,13 +413,40 @@ func (e *EditorPaneWidget) execDelete() {
 func (e *EditorPaneWidget) execRune(r rune) {
 	if e.Selection != nil && e.Selection.Active {
 		start, _ := e.Selection.Range(e.Cursor.Line, e.Cursor.Col)
-		e.replaceSelection(&undo.InsertRuneCommand{Line: start.Line, Col: start.Col, Rune: r})
-		e.Cursor.Col = start.Col + 1
+		if closer, ok := matchingCloser(r); ok {
+			e.replaceSelection(&undo.InsertStringCommand{Line: start.Line, Col: start.Col, Text: string([]rune{r, closer})})
+			e.Cursor.Col = start.Col + 1
+		} else {
+			e.replaceSelection(&undo.InsertRuneCommand{Line: start.Line, Col: start.Col, Rune: r})
+			e.Cursor.Col = start.Col + 1
+		}
 		return
 	}
 	if e.AutoDedent && closingBrackets[r] {
 		e.dedentForCloser()
 	}
+	if closer, ok := matchingCloser(r); ok {
+		e.exec(&undo.InsertStringCommand{Line: e.Cursor.Line, Col: e.Cursor.Col, Text: string([]rune{r, closer})})
+		e.Cursor.Col++
+		return
+	}
 	e.exec(&undo.InsertRuneCommand{Line: e.Cursor.Line, Col: e.Cursor.Col, Rune: r})
 	e.Cursor.Col++
+}
+
+func matchingCloser(r rune) (rune, bool) {
+	switch r {
+	case '{':
+		return '}', true
+	case '[':
+		return ']', true
+	case '(':
+		return ')', true
+	case '"':
+		return '"', true
+	case '\'':
+		return '\'', true
+	default:
+		return 0, false
+	}
 }

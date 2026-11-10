@@ -73,6 +73,36 @@ func TestEditorTypeCharacter(t *testing.T) {
 	}
 }
 
+func TestEditorAutoClosesPairs(t *testing.T) {
+	tests := []struct {
+		name       string
+		input      rune
+		wantLine   string
+		wantCursor int
+	}{
+		{name: "brace", input: '{', wantLine: "{}", wantCursor: 1},
+		{name: "bracket", input: '[', wantLine: "[]", wantCursor: 1},
+		{name: "parenthesis", input: '(', wantLine: "()", wantCursor: 1},
+		{name: "double quote", input: '"', wantLine: "\"\"", wantCursor: 1},
+		{name: "single quote", input: '\'', wantLine: "''", wantCursor: 1},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			e := newTestEditor()
+			e.Buf.Lines[0] = ""
+			e.HandleEvent(tcell.NewEventKey(tcell.KeyRune, string(tt.input), 0))
+
+			if got := e.Buf.Lines[0]; got != tt.wantLine {
+				t.Fatalf("line = %q, want %q", got, tt.wantLine)
+			}
+			if e.Cursor.Col != tt.wantCursor {
+				t.Fatalf("cursor col = %d, want %d", e.Cursor.Col, tt.wantCursor)
+			}
+		})
+	}
+}
+
 func TestEditorCursorPosition(t *testing.T) {
 	e := newTestEditor()
 	e.SetRect(Rect{X: 5, Y: 3, W: 20, H: 10})
