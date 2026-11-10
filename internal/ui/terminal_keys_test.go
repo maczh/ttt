@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"github.com/eugenioenko/ttt/internal/keyboard"
+	"github.com/eugenioenko/ttt/internal/term"
 	"testing"
 
 	"github.com/gdamore/tcell/v3"
@@ -35,5 +37,27 @@ func TestKeyToVTModifiers(t *testing.T) {
 				t.Errorf("keyToVT(%s) = %q, want %q", tt.name, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestKeyToVTKittyIsIndependentFromLegacyEncoding(t *testing.T) {
+	tests := []struct {
+		name  string
+		event keyboard.KeyEvent
+		want  string
+	}{
+		{"ctrl-left", keyboard.KeyEvent{Code: keyboard.KeyLeft, Modifiers: keyboard.ModCtrl}, "\x1b[1;5D"},
+		{"alt-unicode", keyboard.KeyEvent{Code: keyboard.KeyRune, Rune: '界', Modifiers: keyboard.ModAlt}, "\x1b[30028;3u"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := keyboardEventToKitty(tt.event)
+			if got != tt.want {
+				t.Fatalf("kitty encoding = %q, want %q", got, tt.want)
+			}
+		})
+	}
+	if got := keyToVTForProtocol(tcell.NewEventKey(tcell.KeyLeft, "", tcell.ModCtrl), term.KeyboardLegacy); got != "\x1b[1;5D" {
+		t.Fatalf("legacy encoding changed = %q", got)
 	}
 }

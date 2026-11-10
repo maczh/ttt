@@ -11,6 +11,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/eugenioenko/ttt/internal/core/clipboard"
+	"github.com/eugenioenko/ttt/internal/keyboard"
 	"github.com/eugenioenko/ttt/internal/term"
 	"github.com/eugenioenko/ttt/internal/terminal"
 	"github.com/eugenioenko/ttt/internal/textwidth"
@@ -55,13 +56,14 @@ const linkMemoMax = 512
 
 type TerminalWidget struct {
 	BaseWidget
-	Term         *terminal.Terminal
-	Palette      *TerminalColorPalette
-	focused      bool
-	scrollOffset int
-	scrollbar    Scrollbar
-	selecting    bool
-	hasSelection bool
+	Term             *terminal.Terminal
+	Palette          *TerminalColorPalette
+	KeyboardProtocol term.KeyboardProtocol
+	focused          bool
+	scrollOffset     int
+	scrollbar        Scrollbar
+	selecting        bool
+	hasSelection     bool
 	// Cursor state captured during Render, from the same emulator snapshot the
 	// cells come from. Reading it separately afterwards would pair this frame's
 	// content with a later cursor, which is what made TUIs running inside the
@@ -85,9 +87,10 @@ type TerminalWidget struct {
 
 func NewTerminalWidget(t *terminal.Terminal, palette *TerminalColorPalette) *TerminalWidget {
 	return &TerminalWidget{
-		Term:            t,
-		Palette:         palette,
-		mouseButtonHeld: -1,
+		Term:             t,
+		Palette:          palette,
+		KeyboardProtocol: term.KeyboardLegacy,
+		mouseButtonHeld:  -1,
 	}
 }
 
@@ -564,7 +567,7 @@ func (tw *TerminalWidget) HandleEvent(ev tcell.Event) EventResult {
 
 		tw.ClearSelection()
 		tw.scrollOffset = 0
-		data := keyToVT(tev)
+		data := keyToVTForProtocol(tev, tw.KeyboardProtocol)
 		if data != "" {
 			tw.Term.WriteString(data)
 			return EventConsumed
@@ -910,6 +913,19 @@ func (tw *TerminalWidget) scrollDown(n int) {
 }
 
 func keyToVT(ev *tcell.EventKey) string {
+	return keyToVTForProtocol(ev, term.KeyboardLegacy)
+}
+
+func keyToVTForProtocol(ev *tcell.EventKey, protocol term.KeyboardProtocol) string {
+	if protocol == term.KeyboardKitty {
+		if normalized, ok := term.TcellKeyToKeyboard(ev); ok {
+			return keyboardEventToKitty(normalized)
+		}
+	}
+	return keyToVTLegacy(ev)
+}
+
+func keyToVTLegacy(ev *tcell.EventKey) string {
 	if ev.Key() == tcell.KeyRune {
 		mod := ev.Modifiers()
 		// tcell v3 reports ctrl+non-letter printables (ctrl+space, ctrl+/,
@@ -996,6 +1012,59 @@ func keyToVT(ev *tcell.EventKey) string {
 	}
 
 	return ""
+}
+
+func keyboardEventToKitty(ev keyboard.KeyEvent) string {
+	mod := 1
+	if ev.Modifiers&keyboard.ModShift != 0 {
+		mod += 1
+	}
+	if ev.Modifiers&keyboard.ModAlt != 0 {
+		mod += 2
+	}
+	if ev.Modifiers&keyboard.ModCtrl != 0 {
+		mod += 4
+	}
+	if ev.Modifiers&keyboard.ModMeta != 0 {
+		mod += 8
+	}
+	if ev.Code == keyboard.KeyRune {
+		if mod == 1 {
+			return string(ev.Rune)
+		}
+		return fmt.Sprintf("\x1b[%d;%du", ev.Rune, mod)
+	}
+	finals := map[keyboard.KeyCode]byte{
+		keyboard.KeyUp: 'A', keyboard.KeyDown: 'B', keyboard.KeyRight: 'C', keyboard.KeyLeft: 'D',
+		keyboard.KeyHome: 'H', keyboard.KeyEnd: 'F',
+	}
+	if final, ok := finals[ev.Code]; ok {
+		if mod == 1 {
+			return fmt.Sprintf("\x1b[1%c", final)
+		}
+		return fmt.Sprintf("\x1b[1;%d%c", mod, final)
+	}
+	tilde := map[keyboard.KeyCode]int{
+		keyboard.KeyInsert: 2, keyboard.KeyDelete: 3, keyboard.KeyPageUp: 5, keyboard.KeyPageDown: 6,
+	}
+	if n, ok := tilde[ev.Code]; ok {
+		if mod == 1 {
+			return fmt.Sprintf("\x1b[%d~", n)
+		}
+		return fmt.Sprintf("\x1b[%d;%d~", n, mod)
+	}
+	if ev.Code == keyboard.KeyFunction && ev.Function >= 1 && ev.Function <= 4 {
+		final := byte('P' + ev.Function - 1)
+		if mod == 1 {
+			return fmt.Sprintf("\x1bO%c", final)
+		}
+		return fmt.Sprintf("\x1b[1;%d%c", mod, final)
+	}
+	adapted, ok := term.KeyboardEventToTcell(ev)
+	if !ok {
+		return ""
+	}
+	return keyToVTLegacy(adapted)
 }
 
 // vtModParam is xterm's modifier parameter: 1 plus shift(1), alt(2), ctrl(4).
