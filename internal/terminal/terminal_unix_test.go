@@ -27,14 +27,18 @@ type delayedReadPty struct {
 	pty.UnixPty
 	ready <-chan struct{}
 	delay time.Duration
+	reads int
 }
 
 func (p *delayedReadPty) Read(b []byte) (int, error) {
-	<-p.ready
+	if p.reads > 0 {
+		<-p.ready
+	}
+	p.reads++
 	if p.delay > 0 {
 		time.Sleep(p.delay)
 	}
-	return p.UnixPty.Read(b[:min(len(b), 3)])
+	return p.UnixPty.Read(b)
 }
 
 func TestExitDrainsOutputBeforeCallback(t *testing.T) {
@@ -46,7 +50,7 @@ func TestExitDrainsOutputBeforeCallback(t *testing.T) {
 	var release sync.Once
 	defer term.Close()
 	defer release.Do(func() { close(ready) })
-	term.pt = &delayedReadPty{UnixPty: term.pt.(pty.UnixPty), ready: ready}
+	term.reader = &delayedReadPty{UnixPty: term.pt.(pty.UnixPty), ready: ready}
 	exited := make(chan string, 1)
 	term.OnExit = func() { exited <- string(term.RawTail()) }
 	term.Run()
@@ -75,7 +79,7 @@ func TestExitKeepsDrainingWhileReaderMakesProgress(t *testing.T) {
 		t.Fatalf("New: %v", err)
 	}
 	defer term.Close()
-	term.pt = &delayedReadPty{
+	term.reader = &delayedReadPty{
 		UnixPty: term.pt.(pty.UnixPty),
 		ready:   term.waited,
 		delay:   readLoopGrace / 2,

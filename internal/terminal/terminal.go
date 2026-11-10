@@ -35,6 +35,7 @@ type Terminal struct {
 	mu         sync.Mutex
 	term       *xterm.Terminal
 	pt         pty.Pty
+	reader     io.Reader
 	cmd        *pty.Cmd
 	cols, rows int
 	done       chan struct{}
@@ -118,6 +119,7 @@ func New(shell string, cols, rows, scrollbackMax int, env []string, dir string, 
 		return nil, err
 	}
 	t.pt = pt
+	t.reader = pt
 	t.cmd = cmd
 
 	return t, nil
@@ -203,7 +205,7 @@ func (t *Terminal) readLoop() {
 	defer close(t.done)
 	buf := make([]byte, 4096)
 	for {
-		n, err := t.pt.Read(buf)
+		n, err := t.reader.Read(buf)
 		if n > 0 {
 			t.mu.Lock()
 			if !t.closed {
