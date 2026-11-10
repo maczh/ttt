@@ -214,3 +214,13 @@ bin/ttt --size 120x40 --exec "wait-for Explore; screenshot /tmp/screen.txt; debu
 - **Body** explains why, which test covers the change, and includes a `--exec` screenshot for visible changes.
 - **Before opening:** `make test` and `make lint` pass, and comments that describe what the code does are removed.
 - **AI-assisted PRs are welcome**, but the human submitting it must have run the change and be able to explain every line.
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs use local Markdown files under `.scratch/<feature-slug>/`. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+This is a single-context repository with `GLOSSARY.md` and `docs/adr/`. See `docs/agents/domain.md`.
