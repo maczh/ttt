@@ -13,6 +13,24 @@ func TestKeyboardEventToTcellPreservesShortcutSemantics(t *testing.T) {
 	}
 }
 
+func TestTcellKeyToKeyboardRoundTripsCanonicalShortcut(t *testing.T) {
+	got, ok := TcellKeyToKeyboard(tcell.NewEventKey(tcell.KeyLeft, "", tcell.ModCtrl|tcell.ModShift))
+	if !ok {
+		t.Fatal("TcellKeyToKeyboard rejected a supported key")
+	}
+	want := keyboard.KeyEvent{Code: keyboard.KeyLeft, Modifiers: keyboard.ModCtrl | keyboard.ModShift}
+	if got != want {
+		t.Fatalf("normalized key = %#v, want %#v", got, want)
+	}
+}
+
+func TestTcellKeyToKeyboardPreservesUnicodeRune(t *testing.T) {
+	got, ok := TcellKeyToKeyboard(tcell.NewEventKey(tcell.KeyRune, "界", tcell.ModAlt))
+	if !ok || got.Code != keyboard.KeyRune || got.Rune != '界' || got.Modifiers != keyboard.ModAlt {
+		t.Fatalf("normalized unicode key = %#v, ok=%v", got, ok)
+	}
+}
+
 func TestKeyboardEventToTcellPreservesRuneAndFunction(t *testing.T) {
 	runeEvent, ok := KeyboardEventToTcell(keyboard.KeyEvent{Code: keyboard.KeyRune, Rune: '界', Modifiers: keyboard.ModAlt})
 	if !ok || runeEvent.Key() != tcell.KeyRune || runeEvent.Str() != "界" || runeEvent.Modifiers() != tcell.ModAlt {

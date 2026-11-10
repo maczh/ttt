@@ -206,6 +206,14 @@ func RunEventLoop(
 	scheduleAutoSave()
 
 	handleKey := func(tev *tcell.EventKey) {
+		// Cross the protocol-independent keyboard seam before dispatch. The
+		// compatibility conversion preserves the existing tcell-based Root API
+		// while ensuring all real terminal keys pass through one normalizer.
+		if normalized, ok := term.TcellKeyToKeyboard(tev); ok {
+			if adapted, ok := term.KeyboardEventToTcell(normalized); ok {
+				tev = adapted
+			}
+		}
 		app.stopHoverTask()
 		switch tev.Key() {
 		case tcell.KeyUp, tcell.KeyDown, tcell.KeyLeft, tcell.KeyRight,

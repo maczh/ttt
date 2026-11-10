@@ -9,6 +9,76 @@ import (
 
 var errUnsupportedKeyboardEvent = errors.New("unsupported keyboard event")
 
+// TcellKeyToKeyboard crosses the real-terminal adapter boundary. tcell owns
+// the single TTY reader; the application consumes the resulting event through
+// the protocol-independent keyboard model from this point onward.
+func TcellKeyToKeyboard(event *tcell.EventKey) (keyboard.KeyEvent, bool) {
+	if event == nil {
+		return keyboard.KeyEvent{}, false
+	}
+	mod := keyboard.Modifiers(0)
+	if event.Modifiers()&tcell.ModShift != 0 {
+		mod |= keyboard.ModShift
+	}
+	if event.Modifiers()&tcell.ModAlt != 0 {
+		mod |= keyboard.ModAlt
+	}
+	if event.Modifiers()&tcell.ModCtrl != 0 {
+		mod |= keyboard.ModCtrl
+	}
+	if event.Modifiers()&tcell.ModMeta != 0 {
+		mod |= keyboard.ModMeta
+	}
+	if event.Key() == tcell.KeyRune {
+		r := KeyRune(event)
+		if r == 0 {
+			return keyboard.KeyEvent{}, false
+		}
+		return keyboard.KeyEvent{Code: keyboard.KeyRune, Rune: r, Modifiers: mod}, true
+	}
+	for code, key := range map[keyboard.KeyCode]tcell.Key{
+		keyboard.KeyEscape:    keyEscape,
+		keyboard.KeyEnter:     keyEnter,
+		keyboard.KeyTab:       keyTab,
+		keyboard.KeyBackspace: keyBackspace,
+		keyboard.KeyLeft:      keyLeft,
+		keyboard.KeyRight:     keyRight,
+		keyboard.KeyUp:        keyUp,
+		keyboard.KeyDown:      keyDown,
+		keyboard.KeyHome:      keyHome,
+		keyboard.KeyEnd:       keyEnd,
+		keyboard.KeyPageUp:    keyPageUp,
+		keyboard.KeyPageDown:  keyPageDown,
+		keyboard.KeyInsert:    keyInsert,
+		keyboard.KeyDelete:    keyDelete,
+	} {
+		if event.Key() == key {
+			return keyboard.KeyEvent{Code: code, Modifiers: mod}, true
+		}
+	}
+	if event.Key() >= tcell.KeyF1 && event.Key() <= tcell.KeyF12 {
+		return keyboard.KeyEvent{Code: keyboard.KeyFunction, Function: int(event.Key()-tcell.KeyF1) + 1, Modifiers: mod}, true
+	}
+	return keyboard.KeyEvent{}, false
+}
+
+const (
+	keyEscape    = tcell.KeyEscape
+	keyEnter     = tcell.KeyEnter
+	keyTab       = tcell.KeyTab
+	keyBackspace = tcell.KeyBackspace
+	keyLeft      = tcell.KeyLeft
+	keyRight     = tcell.KeyRight
+	keyUp        = tcell.KeyUp
+	keyDown      = tcell.KeyDown
+	keyHome      = tcell.KeyHome
+	keyEnd       = tcell.KeyEnd
+	keyPageUp    = tcell.KeyPgUp
+	keyPageDown  = tcell.KeyPgDn
+	keyInsert    = tcell.KeyInsert
+	keyDelete    = tcell.KeyDelete
+)
+
 // KeyboardEventToTcell adapts a normalized keyboard event to the existing
 // tcell event seam used by Root and widgets.
 func KeyboardEventToTcell(event keyboard.KeyEvent) (*tcell.EventKey, bool) {
