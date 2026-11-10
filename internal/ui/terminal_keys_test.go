@@ -61,3 +61,15 @@ func TestKeyToVTKittyIsIndependentFromLegacyEncoding(t *testing.T) {
 		t.Fatalf("legacy encoding changed = %q", got)
 	}
 }
+
+func TestTerminalWidgetKeyboardProtocolConfiguration(t *testing.T) {
+	tw := &TerminalWidget{}
+	tw.SetKeyboardProtocol("kitty")
+	if tw.KeyboardProtocol != term.KeyboardKitty {
+		t.Fatalf("protocol = %q, want kitty", tw.KeyboardProtocol)
+	}
+	tw.SetKeyboardProtocol("unknown")
+	if tw.KeyboardProtocol != term.KeyboardLegacy {
+		t.Fatalf("unknown protocol = %q, want legacy", tw.KeyboardProtocol)
+	}
+}

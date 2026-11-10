@@ -100,6 +100,15 @@ func (tw *TerminalWidget) SetFocused(f bool) { tw.focused = f }
 
 func (tw *TerminalWidget) WantsRawKeys() bool { return tw.focused }
 
+func (tw *TerminalWidget) SetKeyboardProtocol(name string) {
+	switch term.KeyboardProtocol(name) {
+	case term.KeyboardKitty, term.KeyboardXterm, term.KeyboardLegacy:
+		tw.KeyboardProtocol = term.KeyboardProtocol(name)
+	default:
+		tw.KeyboardProtocol = term.KeyboardLegacy
+	}
+}
+
 func (tw *TerminalWidget) PasteText(text string) {
 	if tw.Term == nil || text == "" {
 		return

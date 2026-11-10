@@ -36,6 +36,9 @@ type TerminalSettings struct {
 	// an interactive shell (e.g. Shell="pi", Args=["--model", "..."]).
 	Args       []string `json:"args,omitempty"`
 	Scrollback int      `json:"scrollback,omitempty"`
+	// KeyboardProtocol controls bytes sent to programs inside the integrated
+	// terminal. Empty means legacy; it is independent from editor input.
+	KeyboardProtocol string `json:"keyboardProtocol,omitempty"`
 }
 
 func DefaultTerminalSettings() TerminalSettings {

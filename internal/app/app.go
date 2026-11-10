@@ -573,6 +573,7 @@ func (a *App) SpawnTerminalSpec(spec TerminalSpec) (string, error) {
 	}
 
 	tw := ui.NewTerminalWidget(t, a.Palette)
+	tw.SetKeyboardProtocol(a.Settings.Terminal.KeyboardProtocol)
 	tw.WorkDir = spec.Cwd
 	tw.OnOpenURL = func(url string) {
 		OpenURL(url)
